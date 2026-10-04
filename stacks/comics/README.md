@@ -62,7 +62,8 @@ paths filled in and needs no `.env`, so Container Station can take it as is.
 
 QNAP notes:
 - **ARM models** (TS-x33, TS-x32 etc.): Kapowarr, Komga and Shelfmark all
-  publish arm64 images, but older 32-bit ARM NASes can't run them.
+  publish arm64 images. Older 32-bit ARM NASes can run Komga but not
+  Kapowarr or Shelfmark.
 - **Low RAM**: Komga is Java and the hungriest of the three. The QNAP file
   caps it at 1 GB, which is fine for a big library; drop to `-Xmx512m` on a
   2 GB NAS.
