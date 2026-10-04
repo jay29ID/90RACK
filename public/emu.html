@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Deck</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      #game { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script>
+      // Runs one game per page load so the rack can swap cartridges by
+      // simply reloading this iframe. Params: core, rom, name, volume.
+      const p = new URLSearchParams(location.search);
+      window.EJS_player = '#game';
+      window.EJS_core = p.get('core');
+      window.EJS_gameUrl = p.get('rom');
+      window.EJS_gameName = p.get('name') || 'game';
+      window.EJS_volume = Number(p.get('volume') ?? 0.5);
+      window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+      window.EJS_startOnLoaded = true;
+      window.EJS_color = '#ff5a36';
+      window.EJS_backgroundColor = '#000';
+      window.EJS_Buttons = { cacheManager: false };
+      // Let the rack set volume / pause from outside.
+      window.addEventListener('message', (e) => {
+        if (e.origin !== location.origin || !window.EJS_emulator) return;
+        const emu = window.EJS_emulator;
+        if (e.data?.type === 'volume') emu.setVolume?.(e.data.value);
+        if (e.data?.type === 'pause') emu.pause?.();
+        if (e.data?.type === 'play') emu.play?.();
+        if (e.data?.type === 'toggle') (emu.paused ? emu.play : emu.pause)?.call(emu);
+        if (e.data?.type === 'reset') emu.gameManager?.restart?.();
+      });
+      const s = document.createElement('script');
+      s.src = window.EJS_pathtodata + 'loader.js';
+      document.body.appendChild(s);
+    </script>
+  </body>
+</html>
