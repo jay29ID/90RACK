@@ -22,8 +22,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEV = process.argv.includes('--dev');
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 9090);
-const PLEX_URL = (process.env.PLEX_URL || '').replace(/\/+$/, '');
-const PLEX_TOKEN = process.env.PLEX_TOKEN || '';
+// Forgive hand-edited .env files: stray spaces ("192.168.1.5 : 32400"),
+// a missing http://, a trailing slash.
+let PLEX_URL = (process.env.PLEX_URL || '').replace(/\s+/g, '').replace(/\/+$/, '');
+if (PLEX_URL && !/^https?:\/\//i.test(PLEX_URL)) PLEX_URL = 'http://' + PLEX_URL;
+let PLEX_URL_PROBLEM = null;
+try {
+  if (PLEX_URL) new URL(PLEX_URL);
+} catch {
+  PLEX_URL_PROBLEM = `PLEX_URL "${process.env.PLEX_URL}" isn't a valid address (expected something like http://192.168.1.50:32400)`;
+  PLEX_URL = '';
+}
+const PLEX_TOKEN = (process.env.PLEX_TOKEN || '').trim();
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || '';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 const ROMS_DIR = path.resolve(ROOT, process.env.ROMS_DIR || './roms');
@@ -290,13 +300,38 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/** Say plainly at startup whether Plex answers, so a typo shows up right away. */
+async function checkPlex() {
+  if (!PLEX_URL || !PLEX_TOKEN) return;
+  try {
+    const r = await fetch(`${PLEX_URL}/library/sections?X-Plex-Token=${encodeURIComponent(PLEX_TOKEN)}`, {
+      headers: { ...PLEX_CLIENT_HEADERS, Accept: 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (r.status === 401) return console.log('    ✗ Plex rejected the token. Double-check PLEX_TOKEN in .env.\n');
+    if (!r.ok) return console.log(`    ✗ Plex answered with HTTP ${r.status}.\n`);
+    const n = (await r.json()).MediaContainer?.Directory?.length ?? 0;
+    console.log(`    ✓ Plex is reachable: ${n} librar${n === 1 ? 'y' : 'ies'} found.\n`);
+  } catch (e) {
+    console.log(`    ✗ Can't reach Plex at ${PLEX_URL} (${e.cause?.code || e.cause?.message || e.message}). Is the address right and is Plex running?\n`);
+  }
+}
+
 server.listen(PORT, HOST, () => {
   const shown = HOST === '0.0.0.0' ? '127.0.0.1' : HOST;
   console.log(`\n  ▶ 90RACK powered on  →  http://${shown}:${PORT}\n`);
-  console.log(`    Plex     ${PLEX_URL && PLEX_TOKEN ? '✓ ' + PLEX_URL : '– not configured (demo discs)'}`);
+  const plexLine = PLEX_URL_PROBLEM
+    ? '✗ ' + PLEX_URL_PROBLEM
+    : PLEX_URL && PLEX_TOKEN
+      ? '✓ ' + PLEX_URL
+      : PLEX_URL
+        ? '– PLEX_TOKEN is missing (demo discs)'
+        : '– not configured (demo discs)';
+  console.log(`    Plex     ${plexLine}`);
   console.log(`    Spotify  ${SPOTIFY_CLIENT_ID ? '✓ client id set' : '– not configured'}`);
   console.log(`    YouTube  ${YOUTUBE_API_KEY ? '✓ search enabled' : '– paste-a-link mode'}`);
   console.log(`    ROMs     ${ROMS_DIR}`);
   const remotes = lanUrls();
   console.log(`    Remote   ${remotes[0] ?? '– set HOST=0.0.0.0 to use your phone as a remote'}\n`);
+  checkPlex();
 });
