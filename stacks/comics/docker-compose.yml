@@ -1,0 +1,55 @@
+# Comics stack: Kapowarr finds and downloads comics, Komga serves them to
+# read, Shelfmark grabs ebooks (novels, manga light novels, art books) into
+# a second Komga library. Paths and IDs come from .env next to this file.
+
+services:
+  # Sonarr for comics: add a volume, it fetches the issues and renames them
+  # into ${DATA_ROOT}/comics, one folder per volume.
+  kapowarr:
+    image: mrcas/kapowarr:latest
+    container_name: kapowarr
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ}
+    ports:
+      - ${KAPOWARR_PORT:-5656}:5656
+    volumes:
+      - ${CONFIG_ROOT}/kapowarr:/app/db
+      - ${DATA_ROOT}/downloads/kapowarr:/app/temp_downloads
+      - ${DATA_ROOT}/comics:/comics
+
+  # The reader: web reader, OPDS for phone/tablet apps, Kobo sync.
+  # It only reads the libraries, so they're mounted read-only.
+  komga:
+    image: gotson/komga:latest
+    container_name: komga
+    restart: unless-stopped
+    user: ${PUID}:${PGID}
+    environment:
+      TZ: ${TZ}
+      JAVA_TOOL_OPTIONS: -Xmx${KOMGA_MAX_MEMORY:-2g}
+    ports:
+      - ${KOMGA_PORT:-25600}:25600
+    volumes:
+      - ${CONFIG_ROOT}/komga:/config
+      - ${DATA_ROOT}/comics:/data/comics:ro
+      - ${DATA_ROOT}/books:/data/books:ro
+
+  # Book and audiobook search/downloader (Anna's Archive, Libgen, torrents,
+  # Usenet). Its /books output is Komga's "Books" library.
+  shelfmark:
+    image: ghcr.io/calibrain/shelfmark:latest
+    container_name: shelfmark
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+    ports:
+      - ${SHELFMARK_PORT:-8084}:8084
+    volumes:
+      - ${CONFIG_ROOT}/shelfmark:/config
+      - ${DATA_ROOT}/books:/books
+      # Only if you point Shelfmark at a torrent/Usenet client: mount the
+      # client's download folder at exactly the same path it uses.
+      # - /path/to/client/downloads:/path/to/client/downloads
