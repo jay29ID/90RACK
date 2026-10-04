@@ -304,6 +304,17 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n  ✗ Port ${PORT} is already in use, most likely by another 90RACK that's still running.`);
+    console.error('    Close the other window, or stop every copy with:');
+    console.error(process.platform === 'win32' ? '      Get-Process node | Stop-Process' : '      pkill -f server/index.js');
+    console.error('    then run npm start again.\n');
+    process.exit(1);
+  }
+  throw err;
+});
+
 /** Say plainly at startup whether Plex answers, so a typo shows up right away. */
 async function checkPlex() {
   if (!PLEX_URL || !PLEX_TOKEN) return;
