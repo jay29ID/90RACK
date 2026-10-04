@@ -7,8 +7,10 @@
 //     mixed-content problems
 //   - lists and streams ROMs from ROMS_DIR for the game deck
 //   - tells the UI which components have a source wired up (/api/status)
+//   - relays the phone remote (/remote) to the rack over server-sent events
 
 import http from 'node:http';
+import os from 'node:os';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -25,6 +27,8 @@ const PLEX_TOKEN = process.env.PLEX_TOKEN || '';
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || '';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 const ROMS_DIR = path.resolve(ROOT, process.env.ROMS_DIR || './roms');
+const DATA_DIR = path.resolve(ROOT, process.env.DATA_DIR || './data');
+const SHELVES_FILE = path.join(DATA_DIR, 'shelves.json');
 
 const PLEX_CLIENT_HEADERS = {
   'X-Plex-Product': '90RACK',
@@ -131,11 +135,104 @@ function serveRom(req, res, url) {
   });
 }
 
+// ── Phone remote relay ─────────────────────────────────────────────────
+// The rack page streams commands from /api/remote/rack and posts its state
+// to /api/remote/state; phones stream that state from /api/remote/phone and
+// post commands to /api/remote/cmd. Plain SSE + POST, no dependencies.
+
+const racks = new Set();
+const phones = new Set();
+let rackState = null;
+
+function sse(req, res, set, onOpen) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.write('retry: 2000\n\n');
+  set.add(res);
+  const ping = setInterval(() => res.write(': ping\n\n'), 20_000);
+  req.on('close', () => {
+    clearInterval(ping);
+    set.delete(res);
+    if (set === racks) broadcastState();
+  });
+  onOpen?.();
+}
+
+function send(res, data) {
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function broadcastState() {
+  for (const p of phones) send(p, { racks: racks.size, state: rackState });
+}
+
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (c) => {
+      body += c;
+      if (body.length > 512_000) req.destroy();
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+async function remoteApi(req, res, url) {
+  const route = url.pathname.slice('/api/remote/'.length);
+  if (route === 'rack' && req.method === 'GET') return sse(req, res, racks, broadcastState);
+  if (route === 'phone' && req.method === 'GET') return sse(req, res, phones, () => send(res, { racks: racks.size, state: rackState }));
+  if (route === 'state' && req.method === 'POST') {
+    rackState = await readJson(req);
+    broadcastState();
+    return sendJson(res, 200, { ok: true });
+  }
+  if (route === 'cmd' && req.method === 'POST') {
+    const cmd = await readJson(req);
+    for (const r of racks) send(r, cmd);
+    return sendJson(res, racks.size ? 200 : 503, { racks: racks.size });
+  }
+  sendJson(res, 404, { error: 'unknown remote route' });
+}
+
+// ── Shelves (what's on display) ────────────────────────────────────────
+
+async function shelvesApi(req, res) {
+  if (req.method === 'PUT') {
+    const body = await readJson(req);
+    await fsp.mkdir(DATA_DIR, { recursive: true });
+    await fsp.writeFile(SHELVES_FILE, JSON.stringify(body));
+    for (const r of racks) send(r, { type: 'shelvesChanged' });
+    for (const p of phones) send(p, { shelvesChanged: true });
+    return sendJson(res, 200, { ok: true });
+  }
+  try {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(await fsp.readFile(SHELVES_FILE));
+  } catch {
+    res.end('{}');
+  }
+}
+
+/** URLs a phone on the same network can open, for the QR code on the rack. */
+function lanUrls() {
+  if (HOST !== '0.0.0.0' && HOST !== '::') return [];
+  return Object.values(os.networkInterfaces())
+    .flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal)
+    .map((i) => `http://${i.address}:${PORT}/remote`);
+}
+
 // ── Static (prod) ──────────────────────────────────────────────────────
 
 function serveStatic(req, res, url) {
   const dist = path.join(ROOT, 'dist');
-  let file = path.resolve(dist, '.' + decodeURIComponent(url.pathname));
+  const pathname = url.pathname === '/remote' ? '/remote.html' : url.pathname;
+  let file = path.resolve(dist, '.' + decodeURIComponent(pathname));
   if (!file.startsWith(dist)) return sendJson(res, 403, { error: 'nope' });
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) file = path.join(dist, 'index.html'); // SPA fallback (e.g. /callback)
@@ -173,13 +270,19 @@ const server = http.createServer(async (req, res) => {
         spotifyClientId: SPOTIFY_CLIENT_ID || null,
         youtubeApiKey: YOUTUBE_API_KEY || null,
         romCount: roms.length,
+        remoteUrls: lanUrls(),
         systems: SYSTEMS,
       });
     }
     if (url.pathname === '/api/roms') return sendJson(res, 200, await listRoms());
+    if (url.pathname.startsWith('/api/remote/')) return remoteApi(req, res, url);
+    if (url.pathname === '/api/shelves') return shelvesApi(req, res);
     if (url.pathname.startsWith('/plex/')) return proxyPlex(req, res, url);
     if (url.pathname.startsWith('/roms/')) return serveRom(req, res, url);
-    if (vite) return vite.middlewares(req, res);
+    if (vite) {
+      if (url.pathname === '/remote') req.url = '/remote.html';
+      return vite.middlewares(req, res);
+    }
     return serveStatic(req, res, url);
   } catch (err) {
     console.error(err);
@@ -193,5 +296,7 @@ server.listen(PORT, HOST, () => {
   console.log(`    Plex     ${PLEX_URL && PLEX_TOKEN ? '✓ ' + PLEX_URL : '– not configured (demo discs)'}`);
   console.log(`    Spotify  ${SPOTIFY_CLIENT_ID ? '✓ client id set' : '– not configured'}`);
   console.log(`    YouTube  ${YOUTUBE_API_KEY ? '✓ search enabled' : '– paste-a-link mode'}`);
-  console.log(`    ROMs     ${ROMS_DIR}\n`);
+  console.log(`    ROMs     ${ROMS_DIR}`);
+  const remotes = lanUrls();
+  console.log(`    Remote   ${remotes[0] ?? '– set HOST=0.0.0.0 to use your phone as a remote'}\n`);
 });

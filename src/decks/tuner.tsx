@@ -25,6 +25,10 @@ function usePresets() {
   return p;
 }
 
+export function getPresets() {
+  return presetsCache;
+}
+
 export async function tune(preset: SpPreset) {
   setState({ tunerUri: preset.uri, input: 'tuner', shelfOpen: false });
   if (deviceId) await sp.playContext(deviceId, preset.uri).catch((e) => console.warn(e));

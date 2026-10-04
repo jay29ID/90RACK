@@ -1,13 +1,16 @@
 import Hls from 'hls.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { attachMedia } from '../audio';
+import { attachMedia, playFailed } from '../audio';
+import { PinButton } from '../components/PinButton';
 import { Btn, Cover, Glyph, Led, Unit, Vfd } from '../components/ui';
 import { useDemoClock, useFlash } from '../hooks';
+import { notePlayed } from '../shelves';
 import * as plex from '../sources/plex';
 import type { PlexItem, PlexSection } from '../sources/plex';
 import { fmtTime, getState, patchNow, registerTransport, setNow, setState, transport, useStore } from '../store';
 
 export function loadDvd(item: PlexItem) {
+  notePlayed('dvd', item);
   setState({ dvd: item, input: 'dvd', shelfOpen: false });
 }
 
@@ -71,7 +74,10 @@ export function DvdScreen({ visible }: { visible: boolean }) {
       video.currentTime = resume;
     }
     attachMedia(video);
-    video.play().catch(() => patchNow('dvd', { playing: false }));
+    video.play().catch((e) => {
+      playFailed(e);
+      patchNow('dvd', { playing: false });
+    });
 
     let lastReport = 0;
     let scrobbled = false;
@@ -99,7 +105,7 @@ export function DvdScreen({ visible }: { visible: boolean }) {
     video.addEventListener('ended', onEnded);
 
     const off = registerTransport('dvd', {
-      toggle: () => (video.paused ? video.play() : video.pause()),
+      toggle: () => (video.paused ? video.play().catch(playFailed) : video.pause()),
       pause: () => video.pause(),
       stop: () => setState({ dvd: null }),
       eject: () => setState({ dvd: null }),
@@ -273,11 +279,19 @@ export function DvdShelf() {
       .then((all) => {
         const video = all.filter((s) => s.type === 'movie' || s.type === 'show');
         setSections(video);
-        if (video[0]) setView({ kind: 'section', section: video[0] });
+        if (video[0]) setView((v) => v ?? { kind: 'section', section: video[0] });
       })
       .catch((e) => setError(e.message));
     plex.onDeck().then(setDeck).catch(() => {});
   }, [plexOn]);
+
+  // Clicking a box set on the wall opens the cabinet right at that show.
+  const focus = useStore((s) => s.cabinetFocus);
+  useEffect(() => {
+    if (!focus) return;
+    setView({ kind: 'show', show: focus });
+    setState({ cabinetFocus: null });
+  }, [focus]);
 
   useEffect(() => {
     if (!view) return;
@@ -367,10 +381,13 @@ export function DvdShelf() {
       ) : (
         <div className="case-grid">
           {shown.map((i) => (
-            <button key={i.ratingKey} className="keepcase" onClick={() => open(i)} title={i.title}>
-              <Cover src={plex.thumbUrl(plex.artFor(i), 240, 360)} title={i.title} subtitle={i.year ? String(i.year) : undefined} />
-              <span className="case-title">{i.title}</span>
-            </button>
+            <div key={i.ratingKey} className="pin-wrap">
+              <button className="keepcase" onClick={() => open(i)} title={i.title}>
+                <Cover src={plex.thumbUrl(plex.artFor(i), 240, 360)} title={i.title} subtitle={i.year ? String(i.year) : undefined} />
+                <span className="case-title">{i.title}</span>
+              </button>
+              {(i.type === 'movie' || i.type === 'show') && <PinButton kind="dvd" item={i} />}
+            </div>
           ))}
         </div>
       )}

@@ -15,13 +15,17 @@ function setTapes(next: Tape[]) {
   tapeListeners.forEach((l) => l(next));
 }
 
-function useTapes() {
+export function useTapes() {
   const [t, setT] = useState(tapes);
   useEffect(() => {
     tapeListeners.add(setT);
     return () => void tapeListeners.delete(setT);
   }, []);
   return t;
+}
+
+export function getTapes() {
+  return tapes;
 }
 
 export function recordTape(t: Tape) {

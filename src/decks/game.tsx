@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { PinButton } from '../components/PinButton';
 import { Btn, Led, Unit, Vfd } from '../components/ui';
+import { notePlayed } from '../shelves';
 import { outputGain, registerTransport, setNow, setState, useStore, type GameSystem, type Rom } from '../store';
 
 export function loadCart(rom: Rom) {
+  if (!rom.id.startsWith('local:')) notePlayed('game', rom);
   setState({ cart: rom, input: 'game', shelfOpen: false, crt: true });
 }
 
@@ -187,10 +190,13 @@ export function GameShelf() {
         {shown.map((r) => {
           const s = systemOf(status?.systems, r.system);
           return (
-            <button key={r.id} className={`cart-tile sys-${r.system}`} onClick={() => loadCart(r)} title={r.name}>
-              <span className="cart-tile-sys">{s?.short}</span>
-              <span className="cart-tile-label">{r.name}</span>
-            </button>
+            <div key={r.id} className="pin-wrap">
+              <button className={`cart-tile sys-${r.system}`} onClick={() => loadCart(r)} title={r.name}>
+                <span className="cart-tile-sys">{s?.short}</span>
+                <span className="cart-tile-label">{r.name}</span>
+              </button>
+              <PinButton kind="game" item={r} />
+            </div>
           );
         })}
       </div>

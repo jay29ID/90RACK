@@ -28,6 +28,7 @@ export interface Status {
   youtubeApiKey: string | null;
   romCount: number;
   systems: GameSystem[];
+  remoteUrls?: string[];
 }
 
 export interface Rom {
@@ -81,6 +82,9 @@ export interface State {
   tape: Tape | null;
   cart: Rom | null;
   tunerUri: string | null;
+  cabinetFocus: PlexItem | null; // a show to open the DVD cabinet at
+  soundBlocked: boolean;
+  pairOpen: boolean; // the phone-remote QR code is showing // autoplay policy is holding sound until someone clicks the TV
 }
 
 export const DSP_MODES = ['DIRECT', 'LOUDNESS', 'HALL', 'JAZZ CLUB', 'STADIUM'];
@@ -140,6 +144,9 @@ let state: State = {
   tape: null,
   cart: null,
   tunerUri: null,
+  soundBlocked: false,
+  pairOpen: false,
+  cabinetFocus: null,
   ...loadPrefs(),
 };
 
@@ -156,6 +163,11 @@ export function setState(patch: Partial<State> | ((s: State) => Partial<State>))
   if (persisted.some((k) => k in next)) {
     saveJson(PERSIST_KEY, Object.fromEntries(persisted.map((k) => [k, state[k]])));
   }
+}
+
+export function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => void listeners.delete(cb);
 }
 
 export function useStore<T>(select: (s: State) => T): T {

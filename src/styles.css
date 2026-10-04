@@ -373,19 +373,19 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
 
 /* ── Power conditioner ────────────────────────────────────────────── */
 
-.power-face { height: 100%; display: flex; align-items: center; gap: 12px; padding-top: 4px; }
+.power-face { height: 100%; display: flex; align-items: center; gap: 8px; padding-top: 4px; }
 .unit-power .silk { top: 50%; transform: translateY(-50%); left: 64px; right: auto; flex-direction: column; gap: 0; }
 .power-face .btn-wrap:first-child .btn-label { display: none; }
 .power-face .hw-power { width: 22px; height: 22px; }
 .power-face .hw-power::after { top: 50%; left: -12px; transform: translateY(-50%); }
-.power-vfd { margin-left: 120px; height: 28px; width: 104px; }
+.power-vfd { margin-left: 108px; height: 28px; width: 88px; flex: none; }
 .power-vfd .vfd-tag { font-size: 9px; }
 .power-meter { display: flex; gap: 2px; }
-.power-meter i { width: 5px; height: 14px; background: #2a1c0c; border-radius: 1px; }
+.power-meter i { width: 4px; height: 14px; background: #2a1c0c; border-radius: 1px; }
 .power-meter i.on { background: var(--vfd-amber); box-shadow: 0 0 5px var(--vfd-amber); }
 .power-meter i.on:nth-child(n + 7) { background: var(--vfd-red); box-shadow: 0 0 5px var(--vfd-red); }
-.clock-vfd { height: 28px; margin-left: auto; }
-.clock-vfd .vfd-big { font-size: 17px; }
+.clock-vfd { height: 28px; margin-left: auto; flex: none; }
+.clock-vfd .vfd-big { font-size: 15px; }
 .power-face > .btn-wrap:last-child { flex-direction: row; }
 
 /* ── Receiver ─────────────────────────────────────────────────────── */
@@ -620,8 +620,8 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
    TV
    ════════════════════════════════════════════════════════════════════ */
 
-.tv-col { min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
-.tv { width: min(100%, calc((100vh - 250px) * 16 / 9 + 32px)); margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.tv-col { min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
+.tv { width: min(100%, calc((100vh - 420px) * 16 / 9 + 32px)); margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
 .tv-bezel {
   display: flex;
   flex-direction: column;
@@ -934,35 +934,6 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
 .press-start { font-family: var(--osd-font); font-size: 34px; color: #ffd84a; margin: 0; animation: blink 1.2s steps(1) infinite; }
 .game-idle small { color: #666; }
 
-/* ── Center channel speaker under the TV ──────────────────────────── */
-
-.center-speaker {
-  flex: none;
-  height: 96px;
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  grid-template-rows: 100%;
-  gap: 18px;
-  align-items: center;
-  padding: 10px 18px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #1a1a1b, #0c0c0c);
-  box-shadow: 0 0 0 1px #000, inset 0 1px 0 #ffffff14, 0 20px 40px #000c;
-}
-.grille {
-  height: 100%;
-  border-radius: 4px;
-  padding: 8px 10px;
-  min-height: 0;
-  overflow: hidden;
-  background: radial-gradient(circle, #ffffff10 1px, transparent 1.5px) 0 0 / 4px 4px, #070707;
-  box-shadow: inset 0 2px 6px #000;
-}
-.center-spectrum { opacity: 0.85; }
-.center-caption { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.center-caption b { color: #eee; font-size: 17px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.center-caption span { color: #888; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-
 /* ════════════════════════════════════════════════════════════════════
    Media shelf
    ════════════════════════════════════════════════════════════════════ */
@@ -1205,6 +1176,298 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
 .sys-atari2600 { --c: #2b2016; }
 .sys-arcade { --c: #a01a1a; }
 
+/* ════════════════════════════════════════════════════════════════════
+   The wall shelves under the TV
+   ════════════════════════════════════════════════════════════════════ */
+
+.media-wall {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 10px 12px 0;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(92deg, #0000 0 7px, #00000022 7px 9px, #0000 9px 23px, #ffffff08 23px 24px),
+    linear-gradient(180deg, #1a0f07, #2a1a0d);
+  box-shadow: inset 0 0 0 1px #000a, inset 0 12px 30px #000c, 0 30px 60px #000c;
+}
+.wall-board {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  padding: 0 4px;
+  /* the shelf plank the media stands on */
+  border-bottom: 12px solid transparent;
+  border-image: linear-gradient(180deg, #7a5230, #4a2e18 45%, #2a180b) 1;
+  box-shadow: 0 10px 12px -6px #000;
+  margin-bottom: 10px;
+}
+.wall-section { flex: 1 1 0; min-width: 0; display: flex; align-items: flex-end; gap: 6px; }
+.sec-dvd { flex-grow: 3; }
+.sec-vhs { flex-grow: 1.3; }
+.sec-cd { flex-grow: 2.6; }
+.sec-game { flex-grow: 1.7; }
+.wall-items {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+.wall-empty { align-self: center; margin: auto; font-size: 11px; color: #8a6a4a; font-style: italic; }
+.bookend {
+  flex: none;
+  align-self: stretch;
+  width: 26px;
+  border: 0;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, #2a1a0d, #4a2e18 40%, #2a1a0d);
+  box-shadow: inset 0 1px 0 #ffffff1a, -4px 0 8px #0006;
+  color: #e7c9a3;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--silk-font);
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  padding: 6px 0;
+}
+.bookend small { font-size: 6px; color: #b08a62; }
+.bookend:hover { color: #fff; }
+
+.spine {
+  position: relative;
+  flex: none;
+  border: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow: visible;
+  transform-origin: bottom center;
+  transition: transform 0.18s ease, filter 0.18s;
+  box-shadow: inset -1px 0 0 #0007, inset 1px 0 0 #ffffff14;
+}
+.spine:hover, .spine:focus-visible { transform: translateY(-10px); z-index: 5; }
+.spine.playing { filter: drop-shadow(0 0 6px var(--vfd-cyan)); transform: translateY(-4px); }
+
+/* DVD keep-case spines: a slice of the poster down the spine */
+.spine-dvd {
+  width: 22px;
+  height: 126px;
+  background:
+    linear-gradient(90deg, #000a, #0000 25%, #0000 75%, #000a),
+    linear-gradient(180deg, #0008, #0003 20%, #0003 80%, #000c),
+    var(--art) center / auto 100%,
+    var(--demo, #111);
+  color: #fff;
+  border-radius: 2px 2px 0 0;
+  padding: 4px 0;
+}
+.spine-dvd.boxset { width: 36px; height: 130px; }
+.spine-logo { font-family: var(--silk-font); font-size: 5.5px; font-style: italic; letter-spacing: 0.05em; color: #fffc; text-shadow: 0 1px 1px #000; }
+.spine-text {
+  writing-mode: vertical-rl;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-top: 6px;
+  font-family: var(--ui);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+.spine.face-out { width: 86px; padding: 3px; background: #0c0c0c; }
+.spine-dvd.face-out { height: 128px; }
+.face-art { width: 100%; height: 100%; border-radius: 1px; }
+.face-art.cover-gen .cover-gen-title { font-size: 9px; }
+.face-art.cover-gen .cover-gen-sub { font-size: 7px; }
+
+/* CD jewel-case spines */
+.spine-cd {
+  width: 15px;
+  height: 98px;
+  background:
+    linear-gradient(90deg, #ffffff40, #ffffff10 30%, #0000 60%, #ffffff20),
+    linear-gradient(180deg, #0006, #0002 50%, #0008),
+    var(--art) center / auto 100%,
+    var(--demo, #222);
+  color: #fff;
+  padding: 3px 0;
+}
+.spine-cd .spine-text { font-size: 8px; font-weight: 600; text-transform: none; padding-top: 3px; }
+.spine-cd .spine-text b { font-weight: 800; margin-bottom: 4px; text-transform: uppercase; }
+.spine-cd .spine-logo { font-size: 5px; }
+.spine-cd.face-out { width: 98px; height: 98px; }
+
+/* VHS tapes in their sleeves */
+.spine-vhs {
+  width: 30px;
+  height: 118px;
+  background: linear-gradient(90deg, #050505, #1d1d1d 30%, #111 70%, #050505);
+  padding: 8px 0 5px;
+  border-radius: 2px 2px 0 0;
+}
+.vhs-spine-label {
+  writing-mode: vertical-rl;
+  width: 20px;
+  flex: 1;
+  margin-bottom: 6px;
+  padding: 6px 0;
+  border-radius: 1px;
+  color: #1a1a1a;
+  font-family: var(--hand);
+  font-size: 11px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Game cartridges standing face-out */
+.spine-cart {
+  --c: #555;
+  width: 58px;
+  height: 70px;
+  margin-right: 3px;
+  padding: 8px 5px 6px;
+  justify-content: flex-start;
+  gap: 4px;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c) 20%, color-mix(in srgb, var(--c) 70%, #000));
+  box-shadow: inset 0 -5px 0 #0003, 0 4px 6px #0008;
+}
+.cart-face-sys { align-self: flex-start; font-family: var(--silk-font); font-size: 5.5px; color: #fff; background: #0006; padding: 1px 3px; border-radius: 2px; }
+.cart-face-label {
+  flex: 1;
+  width: 100%;
+  padding: 3px;
+  border-radius: 2px;
+  background: linear-gradient(160deg, #fff8e8, #e9dcc0);
+  color: #1a1a1a;
+  font-family: var(--hand);
+  font-size: 9px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-align: left;
+}
+
+.sticker {
+  position: absolute;
+  top: -4px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6c0, #ffb547 60%, #b8741a);
+  box-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+/* the cover that pops up when you pull a spine */
+.peek {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  width: 150px;
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px;
+  border-radius: 4px;
+  background: #0b0b0bf2;
+  box-shadow: 0 16px 40px #000;
+  transition: opacity 0.15s, transform 0.15s;
+  writing-mode: horizontal-tb;
+  text-align: left;
+  z-index: 10;
+}
+.spine:hover .peek, .spine:focus-visible .peek { opacity: 1; transform: translateX(-50%); }
+.spine-dvd .peek-art { aspect-ratio: 2 / 3; height: auto; }
+.spine-cd .peek-art { aspect-ratio: 1; height: auto; }
+.spine-vhs .peek-art { aspect-ratio: 16 / 9; height: auto; }
+.peek-title { font-size: 12px; font-weight: 700; color: #fff; line-height: 1.2; }
+.peek-sub { font-size: 11px; color: #aaa; }
+
+/* ── Pin stars in the cabinet ─────────────────────────────────────── */
+
+.pin-wrap { position: relative; }
+.pin {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #000a;
+  color: #e7c9a3;
+  font-size: 14px;
+  line-height: 26px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.pin-wrap:hover .pin, .pin:focus-visible, .pin.on { opacity: 1; }
+.pin.on { color: #ffb547; text-shadow: 0 0 6px #ffb547; }
+@media (hover: none) { .pin { opacity: 0.8; } }
+
+/* ── Sound unlock + remote pairing ────────────────────────────────── */
+
+.sound-blocked {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 6;
+  border: 1px solid #ffb547;
+  border-radius: 8px;
+  padding: 12px 20px;
+  background: #000d;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.sound-blocked small { color: #bbb; }
+
+.pairing { position: fixed; inset: 0; z-index: 50; background: #000b; display: grid; place-items: center; }
+.pairing-card {
+  width: min(420px, 92vw);
+  padding: 26px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #2a2a2d, #141416);
+  box-shadow: 0 30px 80px #000, inset 0 1px 0 #ffffff1a;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.pairing-card h2 { margin: 0; font-family: var(--silk-font); font-size: 15px; letter-spacing: 0.25em; color: #eee; text-transform: uppercase; }
+.pairing-card p { margin: 0; color: #aaa; font-size: 14px; line-height: 1.5; }
+.pairing-card code { font-size: 14px; color: var(--vfd-cyan); word-break: break-all; }
+.pairing-alt { font-size: 12px !important; color: #777 !important; }
+.qr { width: 240px; height: 240px; background: #fff; border-radius: 8px; padding: 6px; }
+.qr svg { width: 100%; height: 100%; display: block; }
+
 /* ── Footer remote hints ──────────────────────────────────────────── */
 
 .remote-hint { flex: none; text-align: center; padding: 4px 0 8px; font-size: 11px; color: #6d5a48; }
@@ -1227,7 +1490,7 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
 .theater .tv { width: 100%; height: 100%; }
 .theater .tv-bezel { flex: 1; }
 .theater .tv-screen { aspect-ratio: auto; flex: 1; }
-.theater .rack-col, .theater .shelf-col, .theater .remote-hint { display: none; }
+.theater .rack-col, .theater .shelf-col, .theater .remote-hint, .theater .media-wall { display: none; }
 .theater .tv-bezel { border-radius: 0; padding: 0; }
 .theater .tv-chin { display: none; }
 .theater .tv-screen { border-radius: 0; }
@@ -1252,5 +1515,6 @@ code { font-family: ui-monospace, monospace; background: #fff1; padding: 0 4px; 
   :root { --U: 40px; }
   .rack-col { overflow-x: auto; }
   .rack { min-width: 560px; }
-  .center-speaker { display: none; }
+  .media-wall { overflow-x: auto; }
+  .wall-board { min-width: 900px; }
 }

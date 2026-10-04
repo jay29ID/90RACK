@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { applySettings } from './audio';
+import { applySettings, unlockSound } from './audio';
+import { MediaWall } from './components/MediaWall';
+import { RemotePairing } from './components/RemotePairing';
 import { CdChanger, CdScreen, CdShelf } from './decks/cd';
 import { DvdPlayer, DvdScreen, DvdShelf } from './decks/dvd';
 import { GameDeck, GameScreen, GameShelf } from './decks/game';
 import { Tuner, TunerScreen, TunerShelf } from './decks/tuner';
 import { Vcr, VcrScreen, VcrShelf } from './decks/vcr';
-import { Spectrum } from './components/Spectrum';
 import { Equalizer, PowerConditioner, Receiver, powerToggle } from './rack';
 import { INPUTS, getState, selectInput, setState, transport, useStore } from './store';
 
@@ -40,13 +41,14 @@ function useRemote() {
       else if (k === 'm' || k === 'AudioVolumeMute') setState({ muted: !s.muted });
       else if (k === 't') setState({ theater: !s.theater });
       else if (k === 'c') setState({ crt: !s.crt });
+      else if (k === 'r') setState({ pairOpen: !s.pairOpen });
       else if (k === 's') setState({ shelfOpen: !s.shelfOpen });
       else if (k === 'e') t?.eject?.();
       else if (k === 'p') powerToggle();
       else if (k === 'f') {
         if (document.fullscreenElement) document.exitFullscreen();
         else document.documentElement.requestFullscreen().catch(() => {});
-      } else if (k === 'Escape' && s.theater) setState({ theater: false });
+      } else if (k === 'Escape' && (s.theater || s.pairOpen)) setState({ theater: false, pairOpen: false });
       else return;
       e.preventDefault();
     };
@@ -60,8 +62,7 @@ function Tv() {
   const power = useStore((s) => s.power);
   const booting = useStore((s) => s.booting);
   const crt = useStore((s) => s.crt);
-  const theater = useStore((s) => s.theater);
-  const np = useStore((s) => s.now[s.input]);
+  const soundBlocked = useStore((s) => s.soundBlocked);
   const inputInfo = INPUTS.find((i) => i.id === input)!;
 
   return (
@@ -84,6 +85,12 @@ function Tv() {
               <small>or hit Enter</small>
             </button>
           )}
+          {power && soundBlocked && (
+            <button className="sound-blocked" onClick={() => unlockSound().then(() => !getState().now[getState().input]?.playing && transport()?.toggle())}>
+              <b>🔈 Click to start sound</b>
+              <small>Your browser wants one click on the rack before it plays audio</small>
+            </button>
+          )}
           <div className="tv-glass" />
         </div>
         <div className="tv-chin">
@@ -92,23 +99,6 @@ function Tv() {
           <span className={`tv-led ${power ? 'on' : ''}`} />
         </div>
       </div>
-      {!theater && (
-        <div className="center-speaker">
-          <div className="grille">
-            <Spectrum bands={48} segments={6} className="center-spectrum" peaks={false} />
-          </div>
-          <div className="center-caption">
-            {np ? (
-              <>
-                <b>{np.title}</b>
-                {np.subtitle && <span>{np.subtitle}</span>}
-              </>
-            ) : (
-              <span>{inputInfo.source}</span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -152,6 +142,7 @@ export default function App() {
 
         <main className="tv-col">
           <Tv />
+          {!theater && <MediaWall />}
         </main>
 
         <aside className={`shelf-col ${shelfOpen ? 'open' : 'closed'}`}>
@@ -162,10 +153,11 @@ export default function App() {
         </aside>
       </div>
 
+      <RemotePairing />
       <footer className="remote-hint">
         <kbd>1</kbd>–<kbd>5</kbd> inputs · <kbd>Space</kbd> play/pause · <kbd>,</kbd>
         <kbd>.</kbd> skip · <kbd>+</kbd>
-        <kbd>−</kbd> volume · <kbd>M</kbd> mute · <kbd>T</kbd> theater · <kbd>F</kbd> fullscreen · <kbd>S</kbd> shelf
+        <kbd>−</kbd> volume · <kbd>M</kbd> mute · <kbd>T</kbd> theater · <kbd>F</kbd> fullscreen · <kbd>S</kbd> cabinet · <kbd>R</kbd> phone remote
       </footer>
     </div>
   );

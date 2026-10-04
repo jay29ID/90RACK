@@ -3,5 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  build: { target: 'es2022', chunkSizeWarningLimit: 1000 },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 1000,
+    rolldownOptions: { input: { rack: 'index.html', remote: 'remote.html' } },
+  },
 });

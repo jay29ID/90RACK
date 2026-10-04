@@ -14,6 +14,8 @@ export interface PlexItem {
   title: string;
   parentTitle?: string;
   grandparentTitle?: string;
+  grandparentRatingKey?: string;
+  addedAt?: number;
   year?: number;
   index?: number;
   parentIndex?: number;
@@ -47,6 +49,11 @@ export async function sections(): Promise<PlexSection[]> {
 
 export async function items(sectionKey: string, type: number): Promise<PlexItem[]> {
   const r = await get<Container<'Metadata', PlexItem>>(`/library/sections/${sectionKey}/all?type=${type}&sort=titleSort`);
+  return r.MediaContainer.Metadata ?? [];
+}
+
+export async function query(path: string): Promise<PlexItem[]> {
+  const r = await get<Container<'Metadata', PlexItem>>(path);
   return r.MediaContainer.Metadata ?? [];
 }
 

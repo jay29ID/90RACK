@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { startRemoteLink } from './remoteLink';
+import { loadShelves } from './shelves';
 import { handleCallback } from './sources/spotify';
 import { setState, type Status } from './store';
 import './styles.css';
@@ -17,6 +19,9 @@ async function boot() {
     .then((r) => r.json() as Promise<Status>)
     .then((status) => setState({ status }))
     .catch(() => setState({ status: { plex: false, spotifyClientId: null, youtubeApiKey: null, romCount: 0, systems: [] } }));
+
+  loadShelves();
+  startRemoteLink();
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

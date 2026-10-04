@@ -20,14 +20,14 @@ export function powerToggle() {
 export function PowerConditioner() {
   const power = useStore((s) => s.power);
   const lamp = useStore((s) => s.lamp);
+  const pairOpen = useStore((s) => s.pairOpen);
   const clock = useClock();
   return (
     <Unit model="PL-PLUS" name="Power Conditioner" u={1} brand="90RACK" className="unit-power">
       <div className="power-face">
         <Btn variant="power" title="Power" onClick={powerToggle} lit={power} label="POWER" />
         <Vfd color="amber" className="power-vfd">
-          <span className="vfd-big">{power ? '120' : ''}</span>
-          {power && <span className="vfd-tag">VOLTS</span>}
+          <span className="vfd-big">{power ? '120V' : ''}</span>
         </Vfd>
         <div className="power-meter">
           {Array.from({ length: 10 }, (_, i) => (
@@ -37,6 +37,7 @@ export function PowerConditioner() {
         <Vfd color="cyan" className="clock-vfd">
           <span className="vfd-big">{clock.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </Vfd>
+        <Btn label="REMOTE" variant="round" lit={pairOpen} onClick={() => setState({ pairOpen: !pairOpen })} title="Pair your phone as a remote (R)" />
         <Btn label="LIGHTS" variant="round" lit={lamp} onClick={() => setState({ lamp: !lamp })} title="Rack lights" />
       </div>
     </Unit>

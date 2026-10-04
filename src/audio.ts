@@ -6,7 +6,7 @@
 // Spotify and YouTube play inside sandboxes we can't tap, so the spectrum
 // analyzer falls back to a convincing simulation for those inputs.
 
-import { DSP_MODES, EQ_BANDS, getState, outputGain } from './store';
+import { DSP_MODES, EQ_BANDS, getState, outputGain, setState } from './store';
 
 let ctx: AudioContext | null = null;
 let eqNodes: BiquadFilterNode[] = [];
@@ -33,6 +33,7 @@ function impulse(c: AudioContext, seconds: number, decay: number) {
 function graph() {
   if (ctx) return ctx;
   ctx = new AudioContext();
+  ctx.onstatechange = () => setState({ soundBlocked: ctx!.state === 'suspended' });
   eqNodes = EQ_BANDS.map((f, i) => {
     const n = ctx!.createBiquadFilter();
     n.type = i === 0 ? 'lowshelf' : i === EQ_BANDS.length - 1 ? 'highshelf' : 'peaking';
@@ -75,6 +76,24 @@ export function attachMedia(el: HTMLMediaElement) {
   }
   el.volume = 1; // master gain does the work so the analyser sees the true level
   if (c.state === 'suspended') c.resume();
+}
+
+/**
+ * Browsers only allow sound after someone has clicked the page. Commands
+ * from the phone remote aren't clicks, so a rack that was never touched
+ * reports "blocked" and the TV asks for one click.
+ */
+export function soundBlocked() {
+  return getState().soundBlocked;
+}
+
+export function playFailed(err: unknown) {
+  if ((err as DOMException)?.name === 'NotAllowedError') setState({ soundBlocked: true });
+}
+
+export async function unlockSound() {
+  await ctx?.resume().catch(() => {});
+  setState({ soundBlocked: false });
 }
 
 export function applySettings() {

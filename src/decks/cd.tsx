@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { attachMedia } from '../audio';
+import { attachMedia, playFailed } from '../audio';
 import { Spectrum } from '../components/Spectrum';
+import { PinButton } from '../components/PinButton';
 import { Btn, Cover, Glyph, Led, Unit, Vfd } from '../components/ui';
 import { useDemoClock } from '../hooks';
+import { notePlayed } from '../shelves';
 import * as plex from '../sources/plex';
 import type { PlexItem } from '../sources/plex';
 import { fmtTime, getState, patchNow, registerTransport, setNow, setState, transport, useStore } from '../store';
 
 /** Put an album in the carousel (reusing its slot if it's already in) and play it. */
 export function loadCd(album: PlexItem) {
+  notePlayed('cd', album);
   const { cdSlots, cdSlot } = getState();
   let slot = cdSlots.findIndex((a) => a?.ratingKey === album.ratingKey);
   if (slot < 0) slot = cdSlots.findIndex((a) => !a);
@@ -99,7 +102,11 @@ export function CdScreen({ visible }: { visible: boolean }) {
     if (!src) return setError('This track has no playable media');
     audio.src = src;
     attachMedia(audio);
-    if (autoplay) audio.play().catch(() => patchNow('cd', { playing: false }));
+    if (autoplay)
+      audio.play().catch((e) => {
+        playFailed(e);
+        patchNow('cd', { playing: false });
+      });
   }, [tracks, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Transport.
@@ -109,7 +116,7 @@ export function CdScreen({ visible }: { visible: boolean }) {
     const play = () => {
       setAutoplay(true);
       if (demo) patchNow('cd', { playing: true });
-      else audio.play();
+      else audio.play().catch(playFailed);
     };
     const pause = () => (demo ? patchNow('cd', { playing: false }) : audio.pause());
     return registerTransport('cd', {
@@ -314,13 +321,16 @@ export function CdShelf() {
         {shown.map((a) => {
           const inChanger = slots.some((s) => s?.ratingKey === a.ratingKey);
           return (
-            <button key={a.ratingKey} className={`jewel ${inChanger ? 'in-changer' : ''}`} onClick={() => loadCd(a)} title={`${a.parentTitle} — ${a.title}`}>
-              <Cover src={albumArt(a, 300)} title={a.title} subtitle={a.parentTitle} />
-              <span className="jewel-text">
-                <b>{a.parentTitle}</b>
-                {a.title}
-              </span>
-            </button>
+            <div key={a.ratingKey} className="pin-wrap">
+              <button className={`jewel ${inChanger ? 'in-changer' : ''}`} onClick={() => loadCd(a)} title={`${a.parentTitle} — ${a.title}`}>
+                <Cover src={albumArt(a, 300)} title={a.title} subtitle={a.parentTitle} />
+                <span className="jewel-text">
+                  <b>{a.parentTitle}</b>
+                  {a.title}
+                </span>
+              </button>
+              <PinButton kind="cd" item={a} />
+            </div>
           );
         })}
       </div>

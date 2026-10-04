@@ -17,6 +17,15 @@ tapes and cartridges. It all plays your own stuff:
 | **Graphic EQ** | SEQ-310 | — | A real 10-band EQ and a live spectrum analyzer on everything coming from Plex |
 | **Power conditioner** | PL-PLUS | — | Power switch, clock, and the rack lights |
 
+Under the TV is a wall of shelves: DVD and box-set spines, VHS tapes, CD
+spines and game cartridges standing up. Hover a spine to see the cover,
+click to play it. A shelf holds the things you've pinned (★ in the cabinet,
+or on the phone), then what you've played lately, then what's newest in your
+library. Everything else is in the cabinet: the drawer that slides out with
+your whole library. Right-click a pinned item on the shelf to take it down.
+Pins and history live in `data/shelves.json` on the server, so the rack and
+your phone see the same shelves.
+
 Nothing is required: without any config the rack boots with demo discs so you
 can see it working, then you wire up sources one at a time.
 
@@ -131,14 +140,30 @@ Any keyboard, or an HTPC / air-mouse remote that sends keys:
 | `+` `-` / 🔊 | Volume |
 | `M` | Muting |
 | `E` | Eject |
-| `S` | Open / close the media shelf |
+| `S` | Open / close the cabinet |
 | `T` | Theater mode (just the TV) |
 | `C` | CRT scanlines |
 | `F` | Fullscreen |
 | `P` | Power |
+| `R` | Show the phone-remote QR code |
 
 While a game is running, keys go to the game. Click outside the TV to get
 the remote back.
+
+## Phone remote
+
+Set `HOST=0.0.0.0` in `.env` and restart. Press **REMOTE** on the power
+conditioner (or `R`) and scan the QR code with your phone (it needs to be on
+the same Wi-Fi). You get an RC-90 universal remote: power, inputs, volume
+rocker, transport, theater/CRT/DSP, the 5 CD slots, plus your shelves. Browse
+or search your whole library from the phone and tap something to play it on
+the TV. Use "Add to Home Screen" so it opens full screen like an app.
+
+Browsers only allow sound after someone clicks the page. If the rack has
+never been clicked and you start something from the phone, the TV shows
+"Click to start sound" (and the phone tells you). Clicking once fixes it for
+the session; on a dedicated TV box the `--autoplay-policy` flag below fixes
+it for good.
 
 ## Running it on the actual TV
 
@@ -150,18 +175,24 @@ npm start &
 chromium --kiosk --autoplay-policy=no-user-gesture-required http://127.0.0.1:9090
 ```
 
-To control it from the couch on another device, set `HOST=0.0.0.0` and
-browse to `http://<rack-ip>:9090` (see the Spotify note above).
+The TV box itself should keep opening `http://127.0.0.1:9090` (Spotify's
+login needs that), while your phone uses the LAN address from the QR code.
+`HOST=0.0.0.0` serves both at once.
 
 ## How it fits together
 
 ```
-server/index.js      one small Node server: serves the UI, proxies Plex, lists/serves ROMs
+server/index.js      one small Node server: serves the UI, proxies Plex, lists/serves ROMs,
+                     relays the phone remote, stores shelf pins
 server/systems.js    which ROM folders/extensions go to which emulator core
 public/emu.html      the EmulatorJS host page the game deck loads in an iframe
 src/store.ts         rack state: power, input, volume, what's loaded in each deck
 src/audio.ts         Web Audio chain: EQ → loudness/reverb DSP → master → analyser
 src/rack.tsx         power conditioner, receiver, equalizer
+src/shelves.ts       what's on display: pins, play history, recently added
+src/components/MediaWall.tsx   the shelves under the TV
+src/remoteLink.ts    rack side of the phone remote
+src/remote/          the phone remote page (/remote)
 src/decks/*.tsx      one file per source: its TV screen, faceplate and shelf
 src/sources/*.ts     Plex, Spotify and YouTube API clients
 ```
