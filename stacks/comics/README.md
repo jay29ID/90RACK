@@ -31,6 +31,46 @@ docker compose up -d
 Create the folders before the first `up`: otherwise Docker creates them as
 root and Komga (which runs as `PUID:PGID`) can't write its config.
 
+## On a QNAP
+
+Use `docker-compose.qnap.yml` instead of step 1's commands: it has QNAP
+paths filled in and needs no `.env`, so Container Station can take it as is.
+
+1. **Install Container Station** from the App Center if you haven't.
+2. **Find your user's IDs.** Control Panel → Network & File Services →
+   Telnet/SSH → enable SSH. Then `ssh admin@<nas-ip>` and run
+   `id <your-qnap-username>`. Put the `uid` and `gid` numbers into the
+   `user:` / `PUID` / `PGID` lines marked `← CHANGE` (QNAP users usually
+   start at uid 500, group `everyone` is gid 100). Set `TZ` too.
+3. **Create the folders** in File Station (or over SSH with `mkdir -p`):
+   - `Container/comics-stack/kapowarr`, `.../komga`, `.../shelfmark`
+   - `Multimedia/Comics`, `Multimedia/Books`, `Multimedia/Downloads/kapowarr`
+
+   then, over SSH, give them to your user:
+   ```bash
+   chown -R 500:100 /share/Container/comics-stack /share/Multimedia/Comics \
+     /share/Multimedia/Books /share/Multimedia/Downloads/kapowarr   # your uid:gid
+   ```
+   (Rather keep them somewhere other than `Multimedia`? Change the paths in
+   the file; just keep `Comics` and `Books` the same in every service.)
+4. **Deploy:** Container Station → **Applications** → **Create**, name it
+   `comics`, paste in `docker-compose.qnap.yml`, **Validate**, **Create**.
+   Or over SSH: copy the file to the NAS and run
+   `docker compose -f docker-compose.qnap.yml up -d`.
+5. Carry on from step 2 below, using `http://<nas-ip>:5656`, `:25600`
+   and `:8084`.
+
+QNAP notes:
+- **ARM models** (TS-x33, TS-x32 etc.): Kapowarr, Komga and Shelfmark all
+  publish arm64 images, but older 32-bit ARM NASes can't run them.
+- **Low RAM**: Komga is Java and the hungriest of the three. The QNAP file
+  caps it at 1 GB, which is fine for a big library; drop to `-Xmx512m` on a
+  2 GB NAS.
+- **Myqnapcloud / router port forwarding**: don't forward these ports.
+  Use QNAP's own QVPN or Tailscale (in the App Center) to read away from home.
+- **Updating**: over SSH, in the folder with the file:
+  `docker compose -f docker-compose.qnap.yml pull && docker compose -f docker-compose.qnap.yml up -d`.
+
 ## 2. Kapowarr (http://server:5656)
 
 1. **Settings → General**: get a free API key from
