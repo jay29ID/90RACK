@@ -74,7 +74,9 @@ async function proxyPlex(req, res, url) {
   const target = new URL(PLEX_URL + url.pathname.slice('/plex'.length) + url.search);
   target.searchParams.set('X-Plex-Token', PLEX_TOKEN);
 
-  const headers = { ...PLEX_CLIENT_HEADERS, Accept: req.headers.accept || 'application/json' };
+  // Ask for an uncompressed reply: fetch() would decompress it anyway, and
+  // the compressed Content-Length would then truncate what we pass on.
+  const headers = { ...PLEX_CLIENT_HEADERS, Accept: req.headers.accept || 'application/json', 'Accept-Encoding': 'identity' };
   if (req.headers.range) headers.Range = req.headers.range;
   if (req.headers['x-plex-session-identifier']) {
     headers['X-Plex-Session-Identifier'] = req.headers['x-plex-session-identifier'];
@@ -85,7 +87,9 @@ async function proxyPlex(req, res, url) {
   try {
     const upstream = await fetch(target, { method: req.method, headers, signal: ac.signal });
     const out = {};
+    const encoded = upstream.headers.has('content-encoding'); // body arrives already decoded
     for (const h of ['content-type', 'content-length', 'content-range', 'accept-ranges', 'cache-control', 'last-modified', 'etag']) {
+      if (h === 'content-length' && encoded) continue;
       const v = upstream.headers.get(h);
       if (v) out[h] = v;
     }
