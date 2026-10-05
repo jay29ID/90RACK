@@ -33,44 +33,36 @@ root and Komga (which runs as `PUID:PGID`) can't write its config.
 
 ## On a QNAP
 
-Use `docker-compose.qnap.yml` instead of step 1's commands: it has QNAP
-paths filled in and needs no `.env`, so Container Station can take it as is.
+`docker-compose.qnap.yml` is set up for a QNAP that already runs an *arr
+stack behind Traefik in Container Station: QNAP paths, everything as root
+like the other containers, and Komga published at `comics.jayflix.ink`.
 
-1. **Install Container Station** from the App Center if you haven't.
-2. **Find your user's IDs.** Control Panel → Network & File Services →
-   Telnet/SSH → enable SSH. Then `ssh admin@<nas-ip>` and run
-   `id <your-qnap-username>`. Put the `uid` and `gid` numbers into the
-   `user:` / `PUID` / `PGID` lines marked `← CHANGE` (QNAP users usually
-   start at uid 500, group `everyone` is gid 100). Set `TZ` too.
-3. **Create the folders.** Make a shared folder called `Comics`
-   (Control Panel → Shared Folders → Create), then over SSH:
+1. **Create the folders** over SSH (`ssh admin@<nas-ip>`):
    ```bash
-   mkdir -p /share/Container/comics-stack/{kapowarr,komga,shelfmark} \
-     /share/Comics/{comics,books,downloads}
-   chown -R 500:100 /share/Container/comics-stack /share/Comics   # your uid:gid
+   mkdir -p /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark} \
+     /share/CACHEDEV1_DATA/Comics/{comics,books} \
+     /share/CACHEDEV1_DATA/Downloads/kapowarr
    ```
-   Everything you read lives in the `Comics` share: `comics/` (Kapowarr's
-   library), `books/` (Shelfmark's), `downloads/` (Kapowarr's temp folder).
-   Keep comics and books in subfolders rather than the share's top level,
-   so Kapowarr never mistakes the books for comic volumes.
-4. **Deploy:** Container Station → **Applications** → **Create**, name it
-   `comics`, paste in `docker-compose.qnap.yml`, **Validate**, **Create**.
-   Or over SSH: copy the file to the NAS and run
-   `docker compose -f docker-compose.qnap.yml up -d`.
-5. Carry on from step 2 below, using `http://<nas-ip>:5656`, `:25600`
-   and `:8084`.
+   Comics and books go in subfolders of the `Comics` share, not its top
+   level, so Kapowarr never mistakes the books for comic volumes.
+2. **Add the services to the existing app.** Container Station →
+   Applications → your stack → Edit. Paste the `kapowarr`, `komga` and
+   `shelfmark` blocks under `services:` (not the `networks:` part, the
+   app already has `proxy`), then Validate and Update. Being in the same
+   app is what puts them on Traefik's `proxy` network.
+3. **DNS:** add a `comics` record for jayflix.ink pointing where
+   `maintainerr` points. Traefik fetches the certificate on the first visit.
+4. Carry on from step 2 below, using `http://<nas-ip>:5656`, `:25600`
+   and `:8084`. Only Komga goes through Traefik: it has its own login.
+   Kapowarr and Shelfmark stay on your home network.
 
 QNAP notes:
-- **ARM models** (TS-x33, TS-x32 etc.): Kapowarr, Komga and Shelfmark all
-  publish arm64 images. Older 32-bit ARM NASes can run Komga but not
-  Kapowarr or Shelfmark.
-- **Low RAM**: Komga is Java and the hungriest of the three. The QNAP file
-  caps it at 1 GB, which is fine for a big library; drop to `-Xmx512m` on a
-  2 GB NAS.
-- **Myqnapcloud / router port forwarding**: don't forward these ports.
-  Use QNAP's own QVPN or Tailscale (in the App Center) to read away from home.
-- **Updating**: over SSH, in the folder with the file:
-  `docker compose -f docker-compose.qnap.yml pull && docker compose -f docker-compose.qnap.yml up -d`.
+- **Memory:** on a 4 GB NAS that also runs Sonarr, Radarr and friends,
+  Komga is capped at 768 MB. Raise `-Xmx` if you add RAM.
+- **NZBGet in Shelfmark:** Shelfmark mounts `Downloads` at `/downloads`,
+  the same path NZBGet uses, so you can add NZBGet as its download client.
+- **Updating:** Container Station → the app → Edit → Update with
+  "pull images" ticked, or over SSH `docker pull` the image and recreate.
 
 ## 2. Kapowarr (http://server:5656)
 

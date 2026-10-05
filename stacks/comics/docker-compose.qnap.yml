@@ -1,12 +1,20 @@
-# QNAP version of the comics stack. Self-contained (no .env needed) so you
-# can paste it straight into Container Station → Applications → Create.
-# Change the lines marked ← CHANGE before deploying.
+# QNAP version of the comics stack, written to sit in the same Container
+# Station app as an existing *arr + Traefik stack: paste the three services
+# under that file's `services:` so they share its `proxy` network, and Traefik
+# can serve Komga over HTTPS. It also deploys on its own, minus the Traefik
+# part.
 #
-# Folders (create them in File Station first, see README "On a QNAP"):
-#   /share/Container/comics-stack/{kapowarr,komga,shelfmark}   app settings
-#   /share/Comics/comics      Kapowarr's library  → Komga "Comics"
-#   /share/Comics/books       Shelfmark downloads → Komga "Books"
-#   /share/Comics/downloads   Kapowarr temp
+# Folders (create before deploying):
+#   /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark}  app settings
+#   /share/CACHEDEV1_DATA/Comics/comics     Kapowarr's library  → Komga "Comics"
+#   /share/CACHEDEV1_DATA/Comics/books      Shelfmark downloads → Komga "Books"
+#   /share/CACHEDEV1_DATA/Downloads/kapowarr                     Kapowarr temp
+#
+# Everything runs as root (0:0), like the rest of the stack.
+
+networks:
+  proxy:
+    driver: bridge
 
 services:
   kapowarr:
@@ -14,39 +22,58 @@ services:
     container_name: kapowarr
     restart: unless-stopped
     environment:
-      TZ: America/New_York                  # ← CHANGE
-    ports:
-      - 5656:5656
+      - TZ=America/New_York
     volumes:
-      - /share/Container/comics-stack/kapowarr:/app/db
-      - /share/Comics/downloads:/app/temp_downloads
-      - /share/Comics/comics:/comics
+      - '/share/CACHEDEV1_DATA/docker/kapowarr:/app/db'
+      - '/share/CACHEDEV1_DATA/Downloads/kapowarr:/app/temp_downloads'
+      - '/share/CACHEDEV1_DATA/Comics/comics:/comics'
+    ports:
+      - '5656:5656'
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=false"
 
   komga:
     image: gotson/komga:latest
     container_name: komga
     restart: unless-stopped
-    user: "500:100"                         # ← CHANGE to your QNAP user's uid:gid
     environment:
-      TZ: America/New_York                  # ← CHANGE
-      JAVA_TOOL_OPTIONS: -Xmx1g             # 1g suits a NAS; 2g if you have 8GB+ RAM
-    ports:
-      - 25600:25600
+      - TZ=America/New_York
+      - JAVA_TOOL_OPTIONS=-Xmx768m
     volumes:
-      - /share/Container/comics-stack/komga:/config
-      - /share/Comics/comics:/data/comics:ro
-      - /share/Comics/books:/data/books:ro
+      - '/share/CACHEDEV1_DATA/docker/komga:/config'
+      - '/share/CACHEDEV1_DATA/Comics/comics:/data/comics:ro'
+      - '/share/CACHEDEV1_DATA/Comics/books:/data/books:ro'
+    ports:
+      - '25600:25600'
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.komga.rule=Host(`comics.jayflix.ink`)"
+      - "traefik.http.routers.komga.entrypoints=websecure"
+      - "traefik.http.routers.komga.tls=true"
+      - "traefik.http.routers.komga.tls.certresolver=myresolver"
+      - "traefik.http.services.komga.loadbalancer.server.port=25600"
+      - "traefik.docker.network=proxy"
 
   shelfmark:
     image: ghcr.io/calibrain/shelfmark:latest
     container_name: shelfmark
     restart: unless-stopped
     environment:
-      PUID: 500                             # ← CHANGE, same uid as above
-      PGID: 100                             # ← CHANGE, same gid as above
-      TZ: America/New_York                  # ← CHANGE
-    ports:
-      - 8084:8084
+      - TZ=America/New_York
+      - PUID=0
+      - PGID=0
     volumes:
-      - /share/Container/comics-stack/shelfmark:/config
-      - /share/Comics/books:/books
+      - '/share/CACHEDEV1_DATA/docker/shelfmark:/config'
+      - '/share/CACHEDEV1_DATA/Comics/books:/books'
+      # Same path NZBGet uses, so Shelfmark can hand downloads to it.
+      - '/share/CACHEDEV1_DATA/Downloads:/downloads'
+    ports:
+      - '8084:8084'
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=false"
