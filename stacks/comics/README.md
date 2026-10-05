@@ -112,8 +112,10 @@ and log in with your Komga account.
    Shelfmark's settings.
 
 Shelfmark handles ebooks (EPUB, PDF…) and audiobooks. Komga reads EPUB and
-PDF; for audiobooks point Shelfmark at a separate folder served by
-Audiobookshelf instead.
+PDF. The QNAP file also runs [Audiobookshelf](https://www.audiobookshelf.org)
+(port 13378, `audiobooks.jayflix.ink`) for audiobooks: set Shelfmark's
+audiobook destination to `/audiobooks`, and add a library in Audiobookshelf
+with the folder `/audiobooks`.
 
 ## Updating
 

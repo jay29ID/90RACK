@@ -5,10 +5,11 @@
 # part.
 #
 # Folders (create before deploying):
-#   /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark}  app settings
+#   /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark,audiobookshelf}  app settings
 #   /share/CACHEDEV1_DATA/Comics/comics     Kapowarr's library  → Komga "Comics"
 #   /share/CACHEDEV1_DATA/Comics/books      Shelfmark downloads → Komga "Books"
 #   /share/CACHEDEV1_DATA/Downloads/kapowarr                     Kapowarr temp
+#   /share/CACHEDEV1_DATA/Comics/audiobooks  Shelfmark audiobooks → Audiobookshelf
 #
 # Everything runs as root (0:0), like the rest of the stack.
 
@@ -69,6 +70,8 @@ services:
     volumes:
       - '/share/CACHEDEV1_DATA/docker/shelfmark:/config'
       - '/share/CACHEDEV1_DATA/Comics/books:/books'
+      # Audiobooks go here; Audiobookshelf reads the same folder.
+      - '/share/CACHEDEV1_DATA/Comics/audiobooks:/audiobooks'
       # Same path NZBGet uses, so Shelfmark can hand downloads to it.
       - '/share/CACHEDEV1_DATA/Downloads:/downloads'
     ports:
@@ -91,3 +94,28 @@ services:
       - proxy
     labels:
       - "traefik.enable=false"
+
+  # Audiobook server + phone app. Shelfmark saves audiobooks to the same
+  # folder. Published at audiobooks.jayflix.ink through Traefik.
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - '/share/CACHEDEV1_DATA/docker/audiobookshelf/config:/config'
+      - '/share/CACHEDEV1_DATA/docker/audiobookshelf/metadata:/metadata'
+      - '/share/CACHEDEV1_DATA/Comics/audiobooks:/audiobooks'
+    ports:
+      - '13378:80'
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.audiobookshelf.rule=Host(`audiobooks.jayflix.ink`)"
+      - "traefik.http.routers.audiobookshelf.entrypoints=websecure"
+      - "traefik.http.routers.audiobookshelf.tls=true"
+      - "traefik.http.routers.audiobookshelf.tls.certresolver=myresolver"
+      - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
+      - "traefik.docker.network=proxy"
