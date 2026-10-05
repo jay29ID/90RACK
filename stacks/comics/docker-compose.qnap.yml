@@ -5,7 +5,7 @@
 # part.
 #
 # Folders (create before deploying):
-#   /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark,audiobookshelf}  app settings
+#   /share/CACHEDEV1_DATA/docker/{kapowarr,komga,shelfmark,audiobookshelf,prowlarr}  app settings
 #   /share/CACHEDEV1_DATA/Comics/comics     Kapowarr's library  → Komga "Comics"
 #   /share/CACHEDEV1_DATA/Comics/books      Shelfmark downloads → Komga "Books"
 #   /share/CACHEDEV1_DATA/Downloads/kapowarr                     Kapowarr temp
@@ -119,3 +119,22 @@ services:
       - "traefik.http.routers.audiobookshelf.tls.certresolver=myresolver"
       - "traefik.http.services.audiobookshelf.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy"
+
+  # Indexer manager: DrunkenSlug/DogNZB set up once here, synced to Sonarr
+  # and Radarr, and searched by Shelfmark for books and audiobooks.
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+      - PUID=0
+      - PGID=0
+    volumes:
+      - '/share/CACHEDEV1_DATA/docker/prowlarr:/config'
+    ports:
+      - '9696:9696'
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=false"
