@@ -70,9 +70,13 @@ QNAP notes:
    [Comic Vine](https://comicvine.gamespot.com/api/) and paste it in. Kapowarr
    can't search without it.
 2. **Settings → Media Management → Root folders**: add `/comics`.
-3. **Settings → General → Authentication**: set a password if the server is
+3. **Settings → General → FlareSolverr base URL**: `http://flaresolverr:8191`
+   (QNAP file only; it includes FlareSolverr). GetComics is behind
+   Cloudflare, and without it every search comes back empty with
+   "Request blocked by CloudFlare and FlareSolverr not setup" in the logs.
+4. **Settings → General → Authentication**: set a password if the server is
    reachable from outside your home network.
-4. **Add Volume**, search a series, add it, then **Search Monitored**.
+5. **Add Volume**, search a series, add it, then **Search Monitored**.
 
 Optional: under **Settings → Download Clients** add a Mega account (higher
 download limit) or a torrent client.

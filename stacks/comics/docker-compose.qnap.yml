@@ -77,3 +77,17 @@ services:
       - proxy
     labels:
       - "traefik.enable=false"
+
+  # Gets Kapowarr past Cloudflare on GetComics. Kapowarr reaches it at
+  # http://flaresolverr:8191 over the proxy network; no port on the LAN.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+      - LOG_LEVEL=info
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=false"
