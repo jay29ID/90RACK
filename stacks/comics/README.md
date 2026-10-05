@@ -42,17 +42,17 @@ paths filled in and needs no `.env`, so Container Station can take it as is.
    `id <your-qnap-username>`. Put the `uid` and `gid` numbers into the
    `user:` / `PUID` / `PGID` lines marked `← CHANGE` (QNAP users usually
    start at uid 500, group `everyone` is gid 100). Set `TZ` too.
-3. **Create the folders** in File Station (or over SSH with `mkdir -p`):
-   - `Container/comics-stack/kapowarr`, `.../komga`, `.../shelfmark`
-   - `Multimedia/Comics`, `Multimedia/Books`, `Multimedia/Downloads/kapowarr`
-
-   then, over SSH, give them to your user:
+3. **Create the folders.** Make a shared folder called `Comics`
+   (Control Panel → Shared Folders → Create), then over SSH:
    ```bash
-   chown -R 500:100 /share/Container/comics-stack /share/Multimedia/Comics \
-     /share/Multimedia/Books /share/Multimedia/Downloads/kapowarr   # your uid:gid
+   mkdir -p /share/Container/comics-stack/{kapowarr,komga,shelfmark} \
+     /share/Comics/{comics,books,downloads}
+   chown -R 500:100 /share/Container/comics-stack /share/Comics   # your uid:gid
    ```
-   (Rather keep them somewhere other than `Multimedia`? Change the paths in
-   the file; just keep `Comics` and `Books` the same in every service.)
+   Everything you read lives in the `Comics` share: `comics/` (Kapowarr's
+   library), `books/` (Shelfmark's), `downloads/` (Kapowarr's temp folder).
+   Keep comics and books in subfolders rather than the share's top level,
+   so Kapowarr never mistakes the books for comic volumes.
 4. **Deploy:** Container Station → **Applications** → **Create**, name it
    `comics`, paste in `docker-compose.qnap.yml`, **Validate**, **Create**.
    Or over SSH: copy the file to the NAS and run

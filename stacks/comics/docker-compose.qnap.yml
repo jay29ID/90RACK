@@ -4,9 +4,9 @@
 #
 # Folders (create them in File Station first, see README "On a QNAP"):
 #   /share/Container/comics-stack/{kapowarr,komga,shelfmark}   app settings
-#   /share/Multimedia/Comics      Kapowarr's library  → Komga "Comics"
-#   /share/Multimedia/Books       Shelfmark downloads → Komga "Books"
-#   /share/Multimedia/Downloads/kapowarr                Kapowarr temp
+#   /share/Comics/comics      Kapowarr's library  → Komga "Comics"
+#   /share/Comics/books       Shelfmark downloads → Komga "Books"
+#   /share/Comics/downloads   Kapowarr temp
 
 services:
   kapowarr:
@@ -19,8 +19,8 @@ services:
       - 5656:5656
     volumes:
       - /share/Container/comics-stack/kapowarr:/app/db
-      - /share/Multimedia/Downloads/kapowarr:/app/temp_downloads
-      - /share/Multimedia/Comics:/comics
+      - /share/Comics/downloads:/app/temp_downloads
+      - /share/Comics/comics:/comics
 
   komga:
     image: gotson/komga:latest
@@ -34,8 +34,8 @@ services:
       - 25600:25600
     volumes:
       - /share/Container/comics-stack/komga:/config
-      - /share/Multimedia/Comics:/data/comics:ro
-      - /share/Multimedia/Books:/data/books:ro
+      - /share/Comics/comics:/data/comics:ro
+      - /share/Comics/books:/data/books:ro
 
   shelfmark:
     image: ghcr.io/calibrain/shelfmark:latest
@@ -49,4 +49,4 @@ services:
       - 8084:8084
     volumes:
       - /share/Container/comics-stack/shelfmark:/config
-      - /share/Multimedia/Books:/books
+      - /share/Comics/books:/books
