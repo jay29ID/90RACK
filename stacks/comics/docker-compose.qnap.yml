@@ -123,7 +123,9 @@ services:
   # Indexer manager: DrunkenSlug/DogNZB set up once here, synced to Sonarr
   # and Radarr, and searched by Shelfmark for books and audiobooks.
   prowlarr:
-    image: linuxserver/prowlarr:latest
+    # Pinned like Radarr: Prowlarr 2.x's newer .NET crashes on this NAS's
+    # ARM CPU ("GC: Failed to initialize GCToOSInterface").
+    image: 'linuxserver/prowlarr:version-1.37.0.5076'
     container_name: prowlarr
     restart: unless-stopped
     environment:
